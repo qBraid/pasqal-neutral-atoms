@@ -1,0 +1,16 @@
+name: pasqal-neutral-atoms
+id: ari:cloud:compass:8526d2ba-687c-46b3-8b65-acaf550a9b39:component/141c5c30-d6a4-4eb9-b8dd-1a0c55663014/708fa9f0-8924-4c51-b7b9-bd4ece72faa8
+description: 'Program Pasqal''s neutral-atom QPU through qBraid: Rydberg blockade, antiferromagnets, the 1/3 magnetization plateau and Maximum Independent Set. Free on the emulator, same code on FRESNEL_CAN1.'
+configVersion: 1
+typeId: SERVICE
+fields:
+  tier: 4
+links:
+  - name: null
+    type: REPOSITORY
+    url: https://github.com/qBraid/pasqal-neutral-atoms
+relationships:
+  DEPENDS_ON: []
+labels:
+  - source:github
+customFields: null
