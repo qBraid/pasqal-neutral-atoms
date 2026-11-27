@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neutral Atoms on qBraid</title>
+<meta name="description" content="Program Pasqal's neutral-atom quantum computer through qBraid: Rydberg blockade, antiferromagnets, a frustrated magnet's 1/3 plateau and graph optimization, with runnable notebooks.">
+<style>
+:root{color-scheme:light;
+  --bg:#f6f5f1;--surface:#fcfcfb;--surface-2:#efeee8;--ink:#0d0d0c;--ink-2:#4a4946;--ink-3:#77766f;
+  --line:#dddcd4;--grid:#e6e5de;--accent:#2a78d6;--accent-ink:#1f5fae;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#8a5cd1;--ref:#52514e;--band:rgba(42,120,214,.09);
+  --code-bg:#f1f0ea;--shadow:0 1px 2px rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.06);
+  --stage-bg:#0b0e14;--atom-g:#3a4252;--atom-r:#7fb8ff;--halo:#4d8fe6;--trap:#4a5466;--edge:#6b7a92}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+  --bg:#111110;--surface:#1a1a19;--surface-2:#242423;--ink:#f0efec;--ink-2:#c3c2b7;--ink-3:#94938a;
+  --line:#353532;--grid:#2a2a28;--accent:#5b9bea;--accent-ink:#8ab8f2;
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#9b72dd;--ref:#c3c2b7;--band:rgba(91,155,234,.12);
+  --code-bg:#1d1d1c;--shadow:none}}
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#111110;--surface:#1a1a19;--surface-2:#242423;--ink:#f0efec;--ink-2:#c3c2b7;--ink-3:#94938a;
+  --line:#353532;--grid:#2a2a28;--accent:#5b9bea;--accent-ink:#8ab8f2;
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#9b72dd;--ref:#c3c2b7;--band:rgba(91,155,234,.12);
+  --code-bg:#1d1d1c;--shadow:none}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16.5px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.serif{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif}
+a{color:var(--accent-ink);text-underline-offset:3px}
+code,pre,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:5px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+@media(max-width:600px){.wrap{padding:0 16px}}
+
+/* top bar */
+.bar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:18px;height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.brand img{height:22px}.brand .x{color:var(--ink-3);font-weight:400}
+.brand .pq{height:15px;width:auto;color:var(--ink)}
+.brand .pq svg{height:15px;width:auto;display:block}
+.nav{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.nav a{font-size:13.5px;color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.nav a:hover,.nav a.on{background:var(--surface-2);color:var(--ink)}
+.theme{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:8px;height:32px;padding:0 10px;font-size:13px;cursor:pointer}
+@media(max-width:860px){.nav{display:none}.bar .wrap{justify-content:space-between}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;background:radial-gradient(1000px 520px at 80% -10%,#1c3d70 0%,rgba(28,61,112,0) 62%),radial-gradient(800px 480px at 0% 120%,#0f3b33 0%,rgba(15,59,51,0) 60%),#0a0d13;color:#f3f2ee;min-height:640px}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero .in{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:86px 24px 70px;pointer-events:none}
+.hero .in>*{pointer-events:auto}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#9fc3f5;font-weight:600}
+.hero h1{font-size:clamp(38px,6.2vw,68px);line-height:1.04;margin:14px 0 18px;max-width:12.5em;font-weight:500;letter-spacing:-.01em}
+.hero p.lede{font-size:clamp(17px,2vw,20px);max-width:34em;color:#d6d9e0;margin:0 0 26px}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;font-weight:600;font-size:15px;text-decoration:none;border:1px solid transparent;cursor:pointer}
+.btn.pri{background:#f3f2ee;color:#0b0e14}.btn.pri:hover{background:#fff}
+.btn.sec{border-color:rgba(255,255,255,.28);color:#f3f2ee}.btn.sec:hover{background:rgba(255,255,255,.08)}
+.hero .facts{display:flex;flex-wrap:wrap;gap:26px;margin-top:46px;font-size:13.5px;color:#aeb6c4}
+.hero .facts b{display:block;font-size:24px;color:#f3f2ee;font-weight:600;font-variant-numeric:tabular-nums}
+.hero .cap{position:absolute;right:24px;bottom:18px;z-index:2;font-size:12px;color:#8e98a8;max-width:360px;text-align:right}
+@media(max-width:700px){.hero canvas{opacity:.42}.hero{min-height:600px}.hero .in{padding-top:56px}.hero .cap{left:16px;right:16px;text-align:left}}
+
+/* sections */
+section.ch{padding:84px 0 40px;border-bottom:1px solid var(--line)}
+.kicker{display:flex;align-items:baseline;gap:14px;color:var(--ink-3);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.kicker .n{font-size:40px;line-height:1;color:var(--accent);letter-spacing:0;font-weight:500}
+h2{font-size:clamp(30px,4.2vw,44px);line-height:1.1;margin:10px 0 16px;font-weight:500;letter-spacing:-.01em}
+h3{font-size:19px;margin:30px 0 8px}
+.lead{font-size:19px;color:var(--ink-2);max-width:40em}
+.prose{max-width:44em}.prose p{margin:0 0 14px}
+.grid2{display:grid;grid-template-columns:1.05fr 1fr;gap:26px;align-items:start;margin-top:26px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.card .hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 0;flex-wrap:wrap}
+.card .hd .t{font-weight:600;font-size:14.5px}
+.card .hd .s{font-size:12.5px;color:var(--ink-3)}
+.card .bd{padding:12px 16px 16px}
+.stage{position:relative;background:var(--stage-bg);border-radius:12px;overflow:hidden;aspect-ratio:16/10.5;margin:12px 16px 0}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage .lbl{position:absolute;left:12px;top:10px;font-size:12px;color:#c9d2e0;background:rgba(10,13,19,.55);padding:3px 8px;border-radius:6px;pointer-events:none}
+.stage .lbl2{position:absolute;right:12px;bottom:10px;font:12px ui-monospace,Menlo,monospace;color:#e6ecf5;background:rgba(10,13,19,.6);padding:3px 8px;border-radius:6px;pointer-events:none;letter-spacing:.06em}
+.ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px 16px;font-size:13.5px;color:var(--ink-2)}
+.ctrl input[type=range]{flex:1;min-width:160px;accent-color:var(--accent)}
+.ctrl .val{font-variant-numeric:tabular-nums;min-width:9em;color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--ink-2);padding:6px 11px;font-size:13px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--surface-2);color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-2);padding:4px 16px 0}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.legend i.dot{width:9px;height:9px;border-radius:50%}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg.chart text{font-size:11.5px;fill:var(--ink-3)}
+svg.chart .ax{font-size:12px;fill:var(--ink-2)}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;box-shadow:0 6px 24px rgba(0,0,0,.14);opacity:0;transition:opacity .12s;max-width:260px}
+.tip b{font-weight:600}.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip .k{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.callout{border-left:3px solid var(--accent);background:var(--surface);padding:12px 16px;border-radius:0 12px 12px 0;margin:18px 0;color:var(--ink-2);max-width:44em}
+.callout b{color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 6px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stat b{display:block;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:13px;color:var(--ink-3)}
+
+/* code */
+.code{margin-top:22px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--code-bg)}
+.code .tabs{display:flex;align-items:center;border-bottom:1px solid var(--line);background:var(--surface)}
+.code .tabs button{border:0;background:none;color:var(--ink-3);padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.code .tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.code .tabs .sp{flex:1}
+.code .tabs .copy{color:var(--ink-2);border:1px solid var(--line);border-radius:7px;padding:4px 10px;margin-right:10px;border-bottom:1px solid var(--line)}
+.code pre{margin:0;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.6;color:var(--ink);max-height:520px}
+.code pre[hidden]{display:none}
+.tok-c{color:var(--ink-3);font-style:italic}.tok-s{color:#1b8a5f}.tok-k{color:#8a3fc2}.tok-n{color:#c2581f}
+:root[data-theme="dark"] .tok-s{color:#5fd0a0}:root[data-theme="dark"] .tok-k{color:#c79bf2}:root[data-theme="dark"] .tok-n{color:#f2a06b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tok-s{color:#5fd0a0}:root:not([data-theme="light"]) .tok-k{color:#c79bf2}:root:not([data-theme="light"]) .tok-n{color:#f2a06b}}
+
+/* primer */
+.primer{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+@media(max-width:860px){.primer{grid-template-columns:1fr}}
+.primer .card .bd p{margin:6px 0 0;color:var(--ink-2);font-size:15px}
+.primer .card .ic{height:110px;background:var(--stage-bg);display:flex;align-items:center;justify-content:center}
+.eq{font-family:"Iowan Old Style",Georgia,serif;font-size:17px;background:var(--surface-2);border-radius:10px;padding:10px 14px;margin:14px 0;max-width:44em;overflow-x:auto;white-space:nowrap}
+
+/* run */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+@media(max-width:860px){.steps{grid-template-columns:1fr}}
+.step .num{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+.step h4{margin:10px 0 6px;font-size:16.5px}.step p{margin:0;color:var(--ink-2);font-size:15px}
+table.t{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+table.t th,table.t td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t th{color:var(--ink-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
+table.t td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.foot{padding:46px 0 70px;color:var(--ink-3);font-size:13.5px}
+.foot .logos{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.foot .logos img{height:26px}.foot .logos .pq svg{height:18px;width:auto;color:var(--ink)}
+ul.refs{padding-left:18px;color:var(--ink-2);font-size:14.5px}
+.ket{font-family:"Cambria Math","STIX Two Math","Segoe UI Symbol","Apple Symbols","DejaVu Sans",serif}
+.pill{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--ink-2);background:var(--surface)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="bar"><div class="wrap">
+  <a class="brand" href="#top"><img alt="qBraid" src="__QBRAID_SRC__"><span class="x">×</span><span class="pq"><!--__PASQAL__--></span></a>
+  <nav class="nav">
+    <a href="#primer">Primer</a><a href="#ch1">1 · Blockade</a><a href="#ch2">2 · Antiferromagnet</a><a href="#ch3">3 · ⅓ plateau</a><a href="#ch4">4 · Graphs</a><a href="#run">Run it</a>
+  </nav>
+  <button class="theme" id="themeBtn" aria-label="Toggle colour theme">Auto</button>
+</div></div>
+
+<header class="hero" id="top">
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="in">
+    <div class="eyebrow">Pasqal FRESNEL_CAN1 · through qBraid</div>
+    <h1 class="serif">Programming matter with light</h1>
+    <p class="lede">Neutral-atom quantum computers hold single atoms in tweezers of light and talk to them with lasers. Four short notebooks take you from one blockaded pair to a frustrated magnet and a graph problem. Each runs free on Pasqal's emulator, and the same code runs on the real QPU.</p>
+    <div class="cta"><a class="btn pri" href="https://account.qbraid.com?install-project=pasqal-neutral-atoms" target="_blank" rel="noopener">Launch on qBraid ↗</a><a class="btn sec" href="#run">How to run it</a></div>
+    <div class="facts">
+      <div><b>4</b>runnable notebooks</div>
+      <div><b id="fJobs">–</b>emulator jobs behind this page</div>
+      <div><b>0</b>credits to reproduce on the emulator</div>
+      <div><b>100</b>atoms on FRESNEL_CAN1</div>
+    </div>
+  </div>
+  <div class="cap" id="heroCap">FRESNEL_CAN1's calibrated 60-trap layout. Lit atoms are in the Rydberg state, and the faint spheres are blockade radii.</div>
+</header>
+
+<main>
+<section class="ch" id="primer"><div class="wrap">
+  <div class="kicker"><span class="n serif">0</span>Primer</div>
+  <h2 class="serif">Three ideas, and you can read every plot below</h2>
+  <p class="lead">An atom array is controlled by a handful of numbers. There are no gates here, only a laser whose strength and frequency you shape over a few microseconds.</p>
+  <div class="primer">
+    <div class="card"><div class="ic"><svg viewBox="0 0 220 100" width="220" height="100" aria-hidden="true"><g id="primerTraps"></g></svg></div><div class="bd"><b>Atoms in tweezers</b><p>Rubidium atoms sit in optical tweezers on a fixed, calibrated grid: a triangular lattice 5 µm apart. You choose which traps are filled. FRESNEL_CAN1 only accepts registers drawn from its calibrated layouts.</p></div></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 220 100" width="220" height="100" aria-hidden="true"><path d="M14 80 C40 80 40 30 70 30 L150 30 C180 30 180 80 206 80" fill="none" stroke="#7fb8ff" stroke-width="2.5"/><path d="M14 74 L70 74 L150 22 L206 22" fill="none" stroke="#f0915e" stroke-width="2.5"/><text x="96" y="24" fill="#7fb8ff" font-size="12">Ω(t)</text><text x="160" y="16" fill="#f0915e" font-size="12">Δ(t)</text></svg></div><div class="bd"><b>One global laser</b><p>The Rabi frequency Ω drives each atom between ground <span class="ket">|g⟩</span> and a Rydberg state <span class="ket">|r⟩</span>. The detuning Δ sets how much the Rydberg state is favoured, and it plays the role of a magnetic field. One pulse shape drives all the atoms at once.</p></div></div>
+    <div class="card"><div class="ic"><svg viewBox="0 0 220 100" width="220" height="100" aria-hidden="true"><circle cx="85" cy="50" r="40" fill="rgba(77,143,230,.16)" stroke="rgba(127,184,255,.5)"/><circle cx="85" cy="50" r="9" fill="#7fb8ff"/><circle cx="120" cy="50" r="9" fill="#3a4252"/><text x="140" y="54" fill="#c9d2e0" font-size="12">U = C₆ / r⁶</text></svg></div><div class="bd"><b>The blockade</b><p>Two Rydberg atoms repel with U = C₆/r⁶. Inside the <em>blockade radius</em>, where U ≫ Ω, two neighbours can't both be excited. That one constraint creates entanglement, magnetic order and graph constraints.</p></div></div>
+  </div>
+  <div class="eq">H/ħ = Σ<sub>i</sub> (Ω/2) σ<sup>x</sup><sub>i</sub> − Δ Σ<sub>i</sub> n<sub>i</sub> + Σ<sub>i&lt;j</sub> (C₆ / r<sub>ij</sub><sup>6</sup>) n<sub>i</sub> n<sub>j</sub></div>
+  <div class="stats">
+    <div class="stat"><b>5 µm</b><span>trap spacing (60- and 217-trap layouts)</span></div>
+    <div class="stat"><b id="sU5">–</b><span>U between neighbours, rad/µs</span></div>
+    <div class="stat"><b>≤ 4π</b><span>Ω, rad/µs · |Δ| ≤ 20π</span></div>
+    <div class="stat"><b>6 µs</b><span>longest sequence</span></div>
+  </div>
+</div></section>
+
+<!-- ============================== CH 1 -->
+<section class="ch" id="ch1"><div class="wrap">
+  <div class="kicker"><span class="n serif">1</span>The Rydberg blockade</div>
+  <h2 class="serif">Two atoms can share one excitation, but never hold two</h2>
+  <div class="prose"><p class="lead">We put three experiments into one register and drive them all with one resonant pulse: a pair 5 µm apart (<b>A</b>), a pair 10 µm apart (<b>B</b>), and a lone atom (<b>C</b>). Then we make the pulse longer, shot by shot.</p>
+  <p>The lone atom flops between <span class="ket">|g⟩</span> and <span class="ket">|r⟩</span> with period 2π/Ω = 1 µs. Pair B is too far apart to notice each other and behaves like two lone atoms. Pair A is inside the blockade radius, so it can only ever hold one excitation, shared in the entangled state (<span class="ket">|gr⟩</span> + <span class="ket">|rg⟩</span>)/√2. That collective state oscillates <b>√2 times faster</b>.</p></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="hd"><span class="t">Register: traps 9, 18 · 56, 59 · 8</span><span class="s">brightness = measured Rydberg probability</span></div>
+      <div class="stage"><canvas id="st1"></canvas><span class="lbl">A · 5 µm &nbsp;&nbsp; B · 10 µm &nbsp;&nbsp; C · alone</span><span class="lbl2" id="st1b"></span></div>
+      <div class="ctrl"><span>pulse length</span><input type="range" id="r1" min="0" max="11" value="4" step="1" aria-label="pulse length"><span class="val" id="v1"></span></div>
+    </div>
+    <div class="card">
+      <div class="hd"><span class="t">Emulator (dots) vs exact simulation (lines)</span><span class="s" id="c1s"></span></div>
+      <div class="legend"><span><i class="dot" style="background:var(--s3)"></i>C, lone atom</span><span><i class="dot" style="background:var(--s1)"></i>A, one excitation</span><span><i class="dot" style="background:var(--s2)"></i>A, both excited</span></div>
+      <div class="bd"><svg class="chart" id="c1a" viewBox="0 0 520 230"></svg></div>
+      <div class="legend"><span><i class="dot" style="background:var(--s4)"></i>B, each atom</span><span><i class="dot" style="background:var(--s2)"></i>B, both excited</span></div>
+      <div class="bd"><svg class="chart" id="c1b" viewBox="0 0 520 200"></svg></div>
+    </div>
+  </div>
+  <div class="callout" id="co1"></div>
+  <div class="code" data-code="1"></div>
+</div></section>
+
+<!-- ============================== CH 2 -->
+<section class="ch" id="ch2"><div class="wrap">
+  <div class="kicker"><span class="n serif">2</span>Growing an antiferromagnet</div>
+  <h2 class="serif">Sweep the laser, and a crystal appears</h2>
+  <div class="prose"><p class="lead">Seven atoms in a row, 5 µm apart. We turn on Ω and sweep Δ from negative, where every atom prefers the ground state, to positive, where every atom wants to be excited.</p>
+  <p>Neighbours can't both be excited, so the compromise is a <b>Néel crystal</b>: every other atom excited, <code>1010101</code>. In spin language (Rydberg = ↑) this is an antiferromagnet, the Z₂-ordered phase seen on 51 atoms by Bernien <em>et al.</em> (2017). Done slowly, the sweep follows the ground state into the ordered phase. This is <em>adiabatic state preparation</em>, the workhorse of analog quantum simulation.</p></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="hd"><span class="t">Seven atoms on one row of the layout</span><div class="seg" id="m2"><button class="on" data-m="avg">average</button><button data-m="shots">single shots</button></div></div>
+      <div class="stage"><canvas id="st2"></canvas><span class="lbl" id="st2l">mean Rydberg density per atom</span><span class="lbl2" id="st2b"></span></div>
+      <div class="ctrl"><span>final Δ / Ω</span><input type="range" id="r2" min="0" max="6" value="5" step="1" aria-label="final detuning"><span class="val" id="v2"></span></div>
+    </div>
+    <div class="card">
+      <div class="hd"><span class="t">From disorder to Z₂ order</span><span class="s">dots: emulator · lines: exact</span></div>
+      <div class="legend"><span><i class="dot" style="background:var(--s1)"></i>P(perfect 1010101)</span><span><i class="dot" style="background:var(--s2)"></i>staggered magnetization</span></div>
+      <div class="bd"><svg class="chart" id="c2" viewBox="0 0 520 300"></svg></div>
+    </div>
+  </div>
+  <div class="callout" id="co2"></div>
+  <div class="code" data-code="2"></div>
+</div></section>
+
+<!-- ============================== CH 3 -->
+<section class="ch" id="ch3"><div class="wrap">
+  <div class="kicker"><span class="n serif">3</span>A magnet made of light</div>
+  <h2 class="serif">Frustration, and the ⅓ magnetization plateau</h2>
+  <div class="prose"><p class="lead">On a triangular lattice the blockade rule can't be satisfied everywhere: on every triangle, at most one atom can be excited. The best the atoms can do is excite one of three sublattices, so exactly ⅓ of them are excited.</p>
+  <p>In magnet language this is a <b>magnetization plateau at m = −⅓</b>. Over a wide range of field (detuning), the magnetization stops changing. This is the triangular-lattice Ising antiferromagnet, the model behind the rare-earth crystal <b>TmMgGaO₄</b>. We use a 3×4 rhombus of 12 atoms, chosen so that the largest blockade-respecting pattern holds exactly 4 atoms: ⅓ of 12.</p></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="hd"><span class="t">12 atoms, 3×4 rhombus</span><div class="seg" id="m3"><button class="on" data-m="avg">average</button><button data-m="shots">single shots</button></div></div>
+      <div class="stage"><canvas id="st3"></canvas><span class="lbl" id="st3l">mean Rydberg density per atom</span><span class="lbl2" id="st3b"></span></div>
+      <div class="ctrl"><span>final Δ</span><input type="range" id="r3" min="0" max="9" value="6" step="1" aria-label="final detuning"><span class="val" id="v3"></span></div>
+    </div>
+    <div class="card">
+      <div class="hd"><span class="t">Magnetization curve</span><span class="s">dots: emulator · line: exact</span></div>
+      <div class="bd"><svg class="chart" id="c3a" viewBox="0 0 520 250"></svg></div>
+      <div class="hd" style="padding-top:0"><span class="t">Probability of a perfect ⅓ crystal</span></div>
+      <div class="bd"><svg class="chart" id="c3b" viewBox="0 0 520 190"></svg></div>
+    </div>
+  </div>
+  <div class="callout" id="co3"></div>
+  <h3>Going bigger: 49 atoms</h3>
+  <div class="grid2" style="margin-top:10px">
+    <div class="prose"><p>Twelve atoms is the free emulator's limit. The same physics at <b>49 atoms</b> needs Pasqal's tensor-network emulator <code>EMU_MPS</code> (billed per minute) or the QPU itself. A 7×7 field sweep of the TmMgGaO₄ model, run this way through qBraid, is plotted here. It uses the material's own field units and the opposite sign convention: Δz/J₁ is the field in units of the material's exchange coupling, and M<sub>z</sub> rises from 0 to full polarization.</p>
+    <p>The ⅓-order signal is strong at low field and collapses as the field polarizes the magnet. The exact curve is for an 18-site cluster.</p>
+    <p class="pill" id="mpsCost"></p></div>
+    <div class="card"><div class="hd"><span class="t">49-atom field sweep (EMU_MPS)</span><span class="s">11 field points</span></div>
+      <div class="legend"><span><i class="dot" style="background:var(--s1)"></i>M<sub>z</sub>, 49-atom emulator</span><span><i style="background:var(--ref)"></i>M<sub>z</sub>, exact (18 sites)</span><span><i class="dot" style="background:var(--s2)"></i>⅓-order signal</span></div>
+      <div class="bd"><svg class="chart" id="c3c" viewBox="0 0 520 250"></svg></div></div>
+  </div>
+  <div class="code" data-code="3"></div>
+</div></section>
+
+<!-- ============================== CH 4 -->
+<section class="ch" id="ch4"><div class="wrap">
+  <div class="kicker"><span class="n serif">4</span>Solving a graph problem</div>
+  <h2 class="serif">The blockade is a constraint solver</h2>
+  <div class="prose"><p class="lead">Put atoms on the vertices of a graph so that the blockaded pairs are exactly its edges. "As many Rydberg atoms as possible, with no two neighbours both excited" is then the <b>Maximum Independent Set</b> problem.</p>
+  <p>MIS is NP-hard in general and turns up in scheduling, wireless network design and portfolio selection. A slow sweep prepares the ground state, and the ground state is the MIS. This is the approach of Ebadi <em>et al.</em> (Science, 2022). How slow is slow enough? We vary the sweep time.</p></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="hd"><span class="t">12-vertex unit-disk graph</span><div class="seg" id="m4"><button class="on" data-m="mis">exact MIS</button><button data-m="shots">top outcomes</button></div></div>
+      <div class="stage"><canvas id="st4"></canvas><span class="lbl" id="st4l">the unique maximum independent set</span><span class="lbl2" id="st4b"></span></div>
+      <div class="ctrl" id="c4ctrl"></div>
+    </div>
+    <div class="card">
+      <div class="hd"><span class="t">Slower sweep, better answer</span><span class="s">dots: emulator · line: exact</span></div>
+      <div class="bd"><svg class="chart" id="c4a" viewBox="0 0 520 220"></svg></div>
+      <div class="hd" style="padding-top:0"><span class="t">Most frequent outcomes, slowest sweep</span><span class="s">green = exact MIS</span></div>
+      <div class="bd"><svg class="chart" id="c4b" viewBox="0 0 520 210"></svg></div>
+    </div>
+  </div>
+  <div class="callout" id="co4"></div>
+  <div class="code" data-code="4"></div>
+</div></section>
+
+<!-- ============================== RUN -->
+<section class="ch" id="run"><div class="wrap">
+  <div class="kicker"><span class="n serif">→</span>Run it yourself</div>
+  <h2 class="serif">Install once, run on the emulator, then the QPU</h2>
+  <p class="lead">Everything on this page comes from four notebooks in one qBraid project. Installing it copies the repository, installs the <b>Pasqal (Pulser)</b> environment with its kernel, and adds the <code>pasqal-on-qbraid</code> skill for coding agents. You don't need a Pasqal account; your qBraid login is enough.</p>
+  <div class="steps">
+    <div class="card step"><div class="bd"><span class="num">1</span><h4>Install the project</h4><p><a href="https://account.qbraid.com?install-project=pasqal-neutral-atoms" target="_blank" rel="noopener">Launch on qBraid</a>, or in qBraid Lab open <b>Explore → Projects → Neutral Atoms on qBraid</b>. Choose <b>Install</b>, or <b>Start with an agent</b> to have an agent walk you through it.</p></div></div>
+    <div class="card step"><div class="bd"><span class="num">2</span><h4>Run a notebook</h4><p>Open any notebook in <code>~/projects/pasqal-neutral-atoms/notebooks</code>, pick the kernel <b>Python 3 [Pasqal]</b>, and run all cells. <code>TARGET = "emu"</code> is free and takes about a minute.</p></div></div>
+    <div class="card step"><div class="bd"><span class="num">3</span><h4>Go to hardware</h4><p>The last cell of each notebook prints a cost estimate and submits the same sequences to FRESNEL_CAN1 only when you set <code>CONFIRM_QPU = True</code>.</p></div></div>
+  </div>
+  <div class="code" data-code="run"></div>
+  <h3>What the QPU cells cost</h3>
+  <div class="tblwrap"><table class="t" id="costTbl"></table></div>
+  <p style="color:var(--ink-3);font-size:13.5px;max-width:50em">Prices are in qBraid credits (1 credit = USD 0.01) at FRESNEL_CAN1's current <span id="perMin"></span> credits per minute of QPU time. They are estimated from one measured run, where 10 shots used 12 s. Queue time isn't billed. A sequence that Pasqal would reject is caught before submission and costs nothing.</p>
+  <h3>Honest notes</h3>
+  <div class="prose"><ul>
+    <li><b>These are demonstrations, not a quantum advantage.</b> At 12 atoms a laptop solves every problem here exactly, and chapter 4 times it. What carries over to 100 atoms is the method.</li>
+    <li><b>The emulator is noiseless.</b> On hardware, expect a few percent of preparation and detection error per atom, so crystal probabilities will be lower than shown.</li>
+    <li><b>The ⅓ plateau</b> is a finite-cluster version of the triangular Ising antiferromagnet. Twelve atoms show the plateau but not the thermodynamic phase transition.</li>
+  </ul></div>
+  <h3>References</h3>
+  <ul class="refs">
+    <li>H. Bernien <em>et al.</em>, Probing many-body dynamics on a 51-atom quantum simulator, Nature 551, 579 (2017)</li>
+    <li>S. Ebadi <em>et al.</em>, Quantum optimization of maximum independent set using Rydberg atom arrays, Science 376, 1209 (2022)</li>
+    <li>H. Li <em>et al.</em>, Kosterlitz-Thouless melting of magnetic order in the triangular quantum Ising material TmMgGaO₄, Nat. Commun. 11, 1111 (2020)</li>
+    <li>Pulser: pulser.readthedocs.io · Pasqal Cloud: docs.pasqal.com/cloud · Source: github.com/qBraid/pasqal-neutral-atoms</li>
+  </ul>
+</div></section>
+</main>
+<footer class="foot"><div class="wrap">
+  <div class="logos"><img alt="qBraid" src="__QBRAID_SRC__"><span class="pq"><!--__PASQAL__--></span></div>
+  <div>Results from Pasqal EMU_FREE runs through qBraid on <span id="built"></span>. Code: github.com/qBraid/pasqal-neutral-atoms (Apache-2.0).</div>
+</div></footer>
+<div class="tip" id="tip"></div>
+
+<script>/*__THREE__*/</script>
+<script>
+const DATA = /*__DATA__*/;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const root = document.documentElement;
+const css = n => getComputedStyle(root).getPropertyValue(n).trim();
+const fmt = (v, d = 2) => (v == null || isNaN(v)) ? "–" : Number(v).toFixed(d);
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+/* ---------------- theme */
+const themes = ["auto", "light", "dark"]; let ti = 0;
+try { const s = localStorage.getItem("na-theme"); if (s) ti = Math.max(0, themes.indexOf(s)); } catch (e) {}
+function applyTheme() { const t = themes[ti]; if (t === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", t); $("#themeBtn").textContent = t[0].toUpperCase() + t.slice(1); redrawCharts(); }
+$("#themeBtn").onclick = () => { ti = (ti + 1) % 3; try { localStorage.setItem("na-theme", themes[ti]); } catch (e) {} applyTheme(); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => redrawCharts());
+
+/* ---------------- tooltip */
+const tip = $("#tip");
+function showTip(html, ev) { tip.innerHTML = html; tip.style.opacity = 1; const x = ev.clientX, y = ev.clientY, w = tip.offsetWidth, h = tip.offsetHeight; tip.style.left = Math.min(innerWidth - w - 8, x + 14) + "px"; tip.style.top = Math.max(8, y - h - 12) + "px"; }
+function hideTip() { tip.style.opacity = 0; }
+
+/* ---------------- chart kit */
+function chart(svg, o) {
+  svg.innerHTML = "";
+  const vb = svg.viewBox.baseVal, W = vb.width, H = vb.height, m = Object.assign({ l: 48, r: 14, t: 12, b: 40 }, o.margin || {});
+  const X = v => m.l + (v - o.x[0]) / (o.x[1] - o.x[0]) * (W - m.l - m.r);
+  const Y = v => H - m.b - (v - o.y[0]) / (o.y[1] - o.y[0]) * (H - m.t - m.b);
+  (o.bands || []).forEach(b => el("rect", { x: X(b.x0), width: X(b.x1) - X(b.x0), y: Y(b.y1), height: Y(b.y0) - Y(b.y1), fill: css("--band"), rx: 4 }, svg));
+  (o.yt || []).forEach(t => { el("line", { x1: m.l, x2: W - m.r, y1: Y(t), y2: Y(t), stroke: css("--grid") }, svg); el("text", { x: m.l - 8, y: Y(t) + 4, "text-anchor": "end" }, svg).textContent = o.yf ? o.yf(t) : t; });
+  (o.xt || []).forEach(t => el("text", { x: X(t), y: H - m.b + 17, "text-anchor": "middle" }, svg).textContent = o.xf ? o.xf(t) : t);
+  el("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: css("--line") }, svg);
+  if (o.xl) el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", class: "ax" }, svg).textContent = o.xl;
+  if (o.yl) el("text", { x: 12, y: (m.t + H - m.b) / 2, transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})`, "text-anchor": "middle", class: "ax" }, svg).textContent = o.yl;
+  (o.refs || []).forEach(r => { if (r.y != null) { el("line", { x1: m.l, x2: W - m.r, y1: Y(r.y), y2: Y(r.y), stroke: css("--ref"), "stroke-dasharray": "4 4", "stroke-width": 1 }, svg); if (r.label) el("text", { x: r.lx != null ? X(r.lx) : W - m.r - 4, y: Y(r.y) - 6, "text-anchor": "end", style: "fill:" + css("--ink-2") }, svg).textContent = r.label; } if (r.x != null) { el("line", { x1: X(r.x), x2: X(r.x), y1: m.t, y2: H - m.b, stroke: css("--ref"), "stroke-dasharray": "2 4" }, svg); if (r.label) el("text", { x: X(r.x) - 5, y: m.t + 12, "text-anchor": "end", style: "fill:" + css("--ink-2") }, svg).textContent = r.label; } });
+  const sg = css("--surface");
+  o.series.forEach(s => {
+    const col = css(s.c);
+    if (s.line) { const d = s.pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(""); el("path", { d, fill: "none", stroke: col, "stroke-width": 2, opacity: s.faint ? .45 : 1, "stroke-linejoin": "round" }, svg); }
+    if (s.dots) s.pts.forEach(p => el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4.6, fill: col, stroke: sg, "stroke-width": 2 }, svg));
+  });
+  // hover: nearest x column
+  const xs = [...new Set(o.series.flatMap(s => s.pts.map(p => p[0])))].sort((a, b) => a - b);
+  const cross = el("line", { y1: m.t, y2: H - m.b, stroke: css("--ink-3"), "stroke-width": 1, opacity: 0 }, svg);
+  const hit = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" }, svg);
+  hit.addEventListener("mousemove", ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W;
+    let best = xs[0]; xs.forEach(x => { if (Math.abs(X(x) - px) < Math.abs(X(best) - px)) best = x; });
+    cross.setAttribute("x1", X(best)); cross.setAttribute("x2", X(best)); cross.setAttribute("opacity", .5);
+    const rows = o.series.filter(s => !s.notip).map(s => { const p = s.pts.find(p => p[0] === best); return p ? `<div class="r"><span><span class="k" style="background:${css(s.c)}"></span>${s.name}</span><b>${fmt(p[1], s.d ?? 3)}</b></div>` : ""; }).join("");
+    showTip(`<div style="margin-bottom:4px;color:var(--ink-3)">${o.xf ? o.xf(best) : best} ${o.xu || ""}</div>${rows}${o.extra ? o.extra(best) : ""}`, ev);
+  });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("opacity", 0); hideTip(); });
+  return { X, Y };
+}
+function bars(svg, items) {
+  svg.innerHTML = ""; const vb = svg.viewBox.baseVal, W = vb.width, H = vb.height, l = 150, r = 50, rowH = (H - 10) / items.length;
+  const max = Math.max(...items.map(i => i.v));
+  items.forEach((it, k) => {
+    const y = 5 + k * rowH, w = (W - l - r) * it.v / max;
+    el("text", { x: l - 10, y: y + rowH / 2 + 4, "text-anchor": "end", style: "font-family:ui-monospace,Menlo,monospace;fill:" + css("--ink-2") }, svg).textContent = it.label;
+    const b = el("rect", { x: l, y: y + 4, width: Math.max(2, w), height: rowH - 8, rx: 4, fill: css(it.c) }, svg);
+    el("text", { x: l + w + 6, y: y + rowH / 2 + 4 }, svg).textContent = (it.v * 100).toFixed(1) + "%";
+    b.addEventListener("mousemove", ev => showTip(`<b>${it.label}</b><div class="r"><span>size</span><b>${it.size}</b></div><div class="r"><span>probability</span><b>${(it.v * 100).toFixed(1)}%</b></div><div>${it.note}</div>`, ev));
+    b.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ---------------- three.js atom stage */
+const TRAPS = DATA.layout; // id -> [x,y] µm
+function glowTexture() { const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d"); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.18, "rgba(255,255,255,.85)"); gr.addColorStop(.45, "rgba(255,255,255,.22)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); }
+let GLOW = null;
+const stages = [];
+class Stage {
+  constructor(canvas, ids, opt = {}) {
+    this.canvas = canvas; this.ids = ids; this.opt = opt; this.state = ids.map(() => 0); this.shown = ids.map(() => 0);
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    this.renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    this.scene = new THREE.Scene(); this.camera = new THREE.PerspectiveCamera(opt.fov || 38, 1, .1, 2000);
+    GLOW = GLOW || glowTexture();
+    const pts = ids.map(i => TRAPS[i]); const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    this.center = opt.center || [cx, cy];
+    const span = Math.max(...pts.map(p => Math.hypot(p[0] - this.center[0], p[1] - this.center[1]))) + 6;
+    this.dist = opt.dist || span * 2.9 + 10;
+    this.group = new THREE.Group(); this.scene.add(this.group);
+    // faint empty traps
+    if (opt.traps !== false) Object.entries(TRAPS).forEach(([k, p]) => { if (ids.includes(+k)) return; const m = new THREE.Mesh(new THREE.RingGeometry(.55, .72, 24), new THREE.MeshBasicMaterial({ color: 0x4a5466, transparent: true, opacity: .55 })); m.position.set(p[0] - this.center[0], p[1] - this.center[1], 0); this.group.add(m); });
+    // edges
+    this.edgeMat = new THREE.LineBasicMaterial({ color: 0x6b7a92, transparent: true, opacity: .55 });
+    (opt.edges || []).forEach(([a, b]) => { const pa = TRAPS[ids[a]], pb = TRAPS[ids[b]]; const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(pa[0] - this.center[0], pa[1] - this.center[1], -.1), new THREE.Vector3(pb[0] - this.center[0], pb[1] - this.center[1], -.1)]); this.group.add(new THREE.Line(g, this.edgeMat)); });
+    const core = new THREE.SphereGeometry(opt.r || .95, 28, 28), halo = new THREE.SphereGeometry(1, 32, 32);
+    this.gC = new THREE.Color(0x3a4252); this.rC = new THREE.Color(0x8cc2ff); this.hiC = new THREE.Color(0x46d39a);
+    this.atoms = ids.map((id, k) => {
+      const p = TRAPS[id], o = new THREE.Group(); o.position.set(p[0] - this.center[0], p[1] - this.center[1], 0);
+      const m = new THREE.Mesh(core, new THREE.MeshBasicMaterial({ color: this.gC.clone() })); o.add(m);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: this.rC.clone(), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); sp.scale.set(5.5, 5.5, 1); o.add(sp);
+      let h = null; if (opt.rb) { h = new THREE.Mesh(halo, new THREE.MeshBasicMaterial({ color: 0x4d8fe6, transparent: true, opacity: 0, depthWrite: false })); h.scale.setScalar(opt.rb); o.add(h); }
+      this.group.add(o); return { o, m, sp, h, hi: 0 };
+    });
+    this.t = Math.random() * 10; this.visible = false; this.tilt = opt.tilt ?? .42;
+    new IntersectionObserver(es => { this.visible = es[0].isIntersecting; }, { rootMargin: "100px" }).observe(canvas);
+    stages.push(this); this.resize();
+  }
+  set(vals, hi) { this.state = vals.slice(); this.hiMask = hi || null; }
+  resize() { const w = this.canvas.clientWidth, h = this.canvas.clientHeight; if (!w || !h) return; this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.aspectFix = Math.max(1, 1.45 / (w / h)); }
+  frame(dt) {
+    if (!this.visible) return;
+    this.t += dt;
+    const a = reduced ? 0 : Math.sin(this.t * .18) * .35, d = this.dist * (this.aspectFix || 1);
+    this.camera.position.set(Math.sin(a) * d * Math.sin(this.tilt), -Math.cos(a) * d * Math.sin(this.tilt), d * Math.cos(this.tilt));
+    this.camera.up.set(0, 0, 1); this.camera.lookAt(0, 0, 0);
+    const k = 1 - Math.exp(-dt * 7);
+    this.atoms.forEach((at, i) => {
+      this.shown[i] += (this.state[i] - this.shown[i]) * k; const s = Math.max(0, Math.min(1, this.shown[i]));
+      const hi = this.hiMask && this.hiMask[i]; at.hi += ((hi ? 1 : 0) - at.hi) * k;
+      const tgt = this.rC.clone().lerp(this.hiC, at.hi);
+      at.m.material.color.copy(this.gC).lerp(tgt, s);
+      at.sp.material.color.copy(tgt); at.sp.material.opacity = s * .95; at.sp.scale.setScalar(3 + 4 * s);
+      if (at.h) at.h.material.opacity = s * .07;
+    });
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+let last = performance.now();
+function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; stages.forEach(s => s.frame(dt)); hero && hero.frame(dt); requestAnimationFrame(loop); }
+addEventListener("resize", () => { stages.forEach(s => s.resize()); hero && hero.resize(); });
+
+/* ---------------- hero: the 60-trap layout forming a 1/3 crystal */
+let hero = null;
+(function initHero() {
+  const canvas = $("#heroCanvas"); const ids = Object.keys(TRAPS).map(Number);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(36, 1, .1, 3000);
+  GLOW = GLOW || glowTexture();
+  const lat = p => { const j = Math.round(p[1] / 4.330127), i = Math.round((p[0] - 2.5 * j) / 5); return ((i - j) % 3 + 3) % 3; };
+  const g = new THREE.Group(); scene.add(g);
+  const core = new THREE.SphereGeometry(.9, 24, 24), halo = new THREE.SphereGeometry(1, 32, 32);
+  const gC = new THREE.Color(0x3a4252), rC = new THREE.Color(0x8cc2ff);
+  const RB = DATA.rb_hero;
+  const atoms = ids.map(id => {
+    const p = TRAPS[id], o = new THREE.Group(); o.position.set(p[0], p[1], 0);
+    const m = new THREE.Mesh(core, new THREE.MeshBasicMaterial({ color: gC.clone(), transparent: true, opacity: 0 })); o.add(m);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: rC, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); sp.scale.set(5, 5, 1); o.add(sp);
+    const h = new THREE.Mesh(halo, new THREE.MeshBasicMaterial({ color: 0x4d8fe6, transparent: true, opacity: 0, depthWrite: false })); h.scale.setScalar(RB / 2); o.add(h);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.25, 32), new THREE.MeshBasicMaterial({ color: 0x5a6a85, transparent: true, opacity: .35, side: THREE.DoubleSide })); o.add(ring);
+    g.add(o); return { o, m, sp, h, sub: lat(p), load: 0, delay: Math.random() * 1.4, ex: 0, tgt: 0, jitter: Math.random() };
+  });
+  // laser sheet
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(4, 80), new THREE.MeshBasicMaterial({ color: 0x7fb8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  sheet.rotation.y = Math.PI / 2 * 0; g.add(sheet);
+  // stars
+  const sv = []; for (let i = 0; i < 700; i++) sv.push((Math.random() - .5) * 900, (Math.random() - .5) * 900, -200 - Math.random() * 400);
+  const sgeo = new THREE.BufferGeometry(); sgeo.setAttribute("position", new THREE.Float32BufferAttribute(sv, 3));
+  scene.add(new THREE.Points(sgeo, new THREE.PointsMaterial({ color: 0x9fb4d6, size: 1.3, transparent: true, opacity: .5 })));
+  let t = 0, phase = 0, pt = 0, sub = 0, ox = 0;
+  const cap = $("#heroCap");
+  const caps = ["Atoms are loaded into FRESNEL_CAN1's calibrated 60-trap layout, 5 µm apart.", "The laser's detuning sweeps from negative to positive…", "…and the blockade forces a ⅓ crystal: one of three sublattices lights up.", "Release, reload, and sweep again: another sublattice wins."];
+  function setPhase(p) { phase = p; pt = 0; cap.textContent = caps[p]; }
+  function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); ox = w > 1100 ? -46 : w > 900 ? -36 : 0; }
+  resize(); setPhase(0);
+  hero = { resize, frame(dt) {
+    if (canvas.getBoundingClientRect().bottom < 0) return;
+    t += dt; pt += dt;
+    if (phase === 0) { atoms.forEach(a => { a.load = Math.min(1, a.load + (pt > a.delay ? dt * 2.2 : 0)); a.tgt = 0; }); if (pt > 2.6) setPhase(1); }
+    else if (phase === 1) { const x = -26 + pt / 2.4 * 52; sheet.position.set(x, 0, 0); sheet.material.opacity = .14; atoms.forEach(a => { if (a.o.position.x < x && a.sub === sub) a.tgt = .3 + .2 * a.jitter; }); if (pt > 2.4) { sheet.material.opacity = 0; setPhase(2); } }
+    else if (phase === 2) { atoms.forEach(a => a.tgt = a.sub === sub ? 1 : 0); if (pt > 4.2) setPhase(3); }
+    else if (phase === 3) { atoms.forEach(a => { a.tgt = 0; a.load = Math.max(0, a.load - dt * 1.6); }); if (pt > 1.4) { sub = (sub + 1) % 3; atoms.forEach(a => a.delay = Math.random() * 1.4); setPhase(0); } }
+    const k = 1 - Math.exp(-dt * 5);
+    atoms.forEach(a => { a.ex += (a.tgt - a.ex) * k; a.m.material.opacity = a.load; a.m.material.color.copy(gC).lerp(rC, a.ex); a.sp.material.opacity = a.ex * .95 * a.load; a.sp.scale.setScalar(2.5 + 4.5 * a.ex); a.h.material.opacity = a.ex * .05; a.o.position.z = Math.sin(t * 1.3 + a.jitter * 6) * .25 * a.load; });
+    const ang = reduced ? .3 : .3 + Math.sin(t * .07) * .25;
+    const d = camera.aspect < 1 ? 150 : 104;
+    camera.position.set(ox + Math.sin(ang) * d * .55, -Math.cos(ang) * d * .55 - 6, d * .8); camera.up.set(0, 0, 1); camera.lookAt(ox, 2, 0);
+    renderer.render(scene, camera);
+  } };
+})();
+
+/* ---------------- chapter 1 */
+const D1 = DATA.ch1, D2 = DATA.ch2, D3 = DATA.ch3, D4 = DATA.ch4;
+const st1 = new Stage($("#st1"), D1.traps, { rb: D1.rb / 2, tilt: .5 });
+function upd1() { const i = +$("#r1").value, s = D1.emu[i]; st1.set([s.A_any / 2, s.A_any / 2, s.B_each, s.B_each, s.C]); $("#v1").textContent = `${D1.durations[i]} ns`; $("#st1b").textContent = `A: ${fmt(s.A_any)}  ·  A both: ${fmt(s.A_both)}  ·  C: ${fmt(s.C)}`; }
+$("#r1").oninput = upd1; upd1();
+function draw1() {
+  const xs = D1.durations, s = D1.emu, x = D1.exact;
+  const sr = (k, c, name) => [{ name: name + " (exact)", c, line: 1, faint: 1, pts: xs.map((t, i) => [t, x[i][k]]), notip: 1 }, { name, c, dots: 1, pts: xs.map((t, i) => [t, s[i][k]]) }];
+  chart($("#c1a"), { x: [0, 1250], y: [0, 1.02], yt: [0, .25, .5, .75, 1], xt: [0, 250, 500, 750, 1000, 1250], xu: "ns", xl: "pulse length (ns)", yl: "probability", series: [...sr("C", "--s3", "C lone"), ...sr("A_any", "--s1", "A one"), ...sr("A_both", "--s2", "A both")] });
+  chart($("#c1b"), { x: [0, 1250], y: [0, 1.02], yt: [0, .5, 1], xt: [0, 250, 500, 750, 1000, 1250], xu: "ns", xl: "pulse length (ns)", yl: "probability", series: [...sr("B_each", "--s4", "B each"), ...sr("B_both", "--s2", "B both")] });
+  $("#c1s").textContent = `${D1.shots} shots per point`;
+}
+$("#co1").innerHTML = `<b>Measured:</b> across all ${D1.durations.length} pulse lengths, the blockaded pair had both atoms excited in at most <b>${fmt(D1.max_A_both * 100, 1)}%</b> of shots. The 10 µm pair reached <b>${fmt(Math.max(...D1.emu.map(e => e.B_both)) * 100, 0)}%</b> at its π-pulse. The cloud emulator matches the exact simulation to within <b>${fmt(D1.dev, 3)}</b> on average (shot noise at ${D1.shots} shots is about 0.02).`;
+
+/* ---------------- chapter 2 */
+const st2 = new Stage($("#st2"), D2.traps, { rb: D2.rb / 2, tilt: .62 });
+let m2 = "avg", shotT2 = 0, shotK2 = 0;
+function upd2() { const i = +$("#r2").value; $("#v2").textContent = `${fmt(D2.delta_end[i] / D2.omega, 1)}  (P(Néel) = ${fmt(D2.emu[i].neel)})`; if (m2 === "avg") { st2.set(D2.emu[i].n); $("#st2b").textContent = D2.emu[i].n.map(v => fmt(v, 1)).join(" "); $("#st2l").textContent = "mean Rydberg density per atom"; } }
+$("#r2").oninput = upd2;
+$$("#m2 button").forEach(b => b.onclick = () => { m2 = b.dataset.m; $$("#m2 button").forEach(x => x.classList.toggle("on", x === b)); if (m2 === "shots") { $("#r2").value = D2.snap_index; } upd2(); });
+function shots2(dt) { if (m2 !== "shots") return; shotT2 -= dt; if (shotT2 > 0) return; shotT2 = 1.3; const b = D2.snapshots[shotK2++ % D2.snapshots.length]; st2.set([...b].map(Number)); $("#st2b").textContent = b; $("#st2l").textContent = `most frequent single shots at Δ/Ω = ${fmt(D2.delta_end[D2.snap_index] / D2.omega, 1)}`; }
+upd2();
+function draw2() {
+  const xs = D2.delta_end.map(d => d / D2.omega);
+  chart($("#c2"), { x: [-1.2, 4], y: [-.3, 1.02], yt: [0, .25, .5, .75, 1], xt: [-1, 0, 1, 2, 3, 4], xl: "final detuning Δ / Ω", series: [
+    { name: "P(1010101) exact", c: "--s1", line: 1, faint: 1, notip: 1, pts: xs.map((x, i) => [x, D2.exact[i].neel]) }, { name: "P(1010101)", c: "--s1", dots: 1, pts: xs.map((x, i) => [x, D2.emu[i].neel]) },
+    { name: "staggered m exact", c: "--s2", line: 1, faint: 1, notip: 1, pts: xs.map((x, i) => [x, D2.exact[i].stag]) }, { name: "staggered m", c: "--s2", dots: 1, pts: xs.map((x, i) => [x, D2.emu[i].stag]) }], xf: v => fmt(v, 1), xu: "Δ/Ω" });
+}
+$("#co2").innerHTML = `<b>Measured:</b> at negative detuning almost every shot is <code>0000000</code>. Past Δ ≈ Ω the Néel pattern takes over, and at Δ/Ω = ${fmt(D2.delta_end[D2.best] / D2.omega, 1)} <b>${fmt(D2.emu[D2.best].neel * 100, 0)}%</b> of shots are the perfect crystal <code>1010101</code> (exact: ${fmt(D2.exact[D2.best].neel * 100, 0)}%). The rest are mostly single domain walls such as <code>${D2.wall}</code>. A slower sweep reduces them; try <code>duration=6000</code>.`;
+
+/* ---------------- chapter 3 */
+const st3 = new Stage($("#st3"), D3.traps, { rb: D3.rb / 2, tilt: .55 });
+let m3 = "avg", shotT3 = 0, shotK3 = 0;
+function upd3() { const i = +$("#r3").value, s = D3.emu[i]; $("#v3").textContent = `${D3.delta_end[i]} rad/µs  (m = ${fmt(s.m)})`; if (m3 === "avg") { st3.set(D3.n_per_atom[i]); $("#st3b").textContent = `n = ${fmt(s.n, 3)}  ·  P(crystal) = ${fmt(s.crystal)}`; $("#st3l").textContent = "mean Rydberg density per atom"; } }
+$("#r3").oninput = upd3;
+$$("#m3 button").forEach(b => b.onclick = () => { m3 = b.dataset.m; $$("#m3 button").forEach(x => x.classList.toggle("on", x === b)); if (m3 === "shots") $("#r3").value = D3.snap_index; upd3(); });
+function shots3(dt) { if (m3 !== "shots") return; shotT3 -= dt; if (shotT3 > 0) return; shotT3 = 1.4; const b = D3.snapshots[shotK3++ % D3.snapshots.length]; st3.set([...b].map(Number)); $("#st3b").textContent = `${b}  ·  ${[...b].filter(c => c === "1").length} of 12`; $("#st3l").textContent = `single shots on the plateau (Δ = ${D3.delta_end[D3.snap_index]} rad/µs)`; }
+upd3();
+function draw3() {
+  const xs = D3.delta_end;
+  chart($("#c3a"), { x: [-8, 62], y: [-1.05, -.05], yt: [-1, -2 / 3, -1 / 3, 0].slice(0, 3), yf: v => v === -1 ? "−1" : v > -.4 ? "−⅓" : "−⅔", xt: [0, 10, 20, 30, 40, 50, 60], xu: "rad/µs", xl: "final detuning Δ (rad/µs)  ≈  field", yl: "magnetization m", bands: [{ x0: D3.plateau[0], x1: D3.plateau[1], y0: -1.05, y1: -.05 }], refs: [{ y: -1 / 3, label: "m = −⅓ plateau", lx: 34 }], series: [
+    { name: "m exact", c: "--ref", line: 1, notip: 0, pts: xs.map((x, i) => [x, D3.exact[i].m]) }, { name: "m emulator", c: "--s1", dots: 1, pts: xs.map((x, i) => [x, D3.emu[i].m]) }] });
+  chart($("#c3b"), { x: [-8, 62], y: [0, 1.02], yt: [0, .5, 1], xt: [0, 10, 20, 30, 40, 50, 60], xu: "rad/µs", xl: "final detuning Δ (rad/µs)", refs: [{ x: D3.u5, label: "U(5 µm)" }], series: [
+    { name: "exact", c: "--ref", line: 1, pts: xs.map((x, i) => [x, D3.exact[i].crystal]) }, { name: "emulator", c: "--s3", dots: 1, pts: xs.map((x, i) => [x, D3.emu[i].crystal]) }] });
+  const M = DATA.mps49;
+  chart($("#c3c"), { x: [0, 12.5], y: [0, 1.02], yt: [0, .25, .5, .75, 1], xt: [0, 2, 4, 6, 8, 10, 12], xu: "Δz/J₁", xl: "field Δz / J₁", series: [
+    { name: "Mz exact (18 sites)", c: "--ref", line: 1, pts: M.exact.map(p => [p.x, p.y]), notip: 1 },
+    { name: "Mz, 49 atoms", c: "--s1", dots: 1, pts: M.mps.map(p => [p.x, p.y]) },
+    { name: "⅓-order signal", c: "--s2", dots: 1, pts: M.mps.map(p => [p.x, p.s]) }] });
+}
+$("#mpsCost").textContent = `EMU_MPS cost for that sweep: ${Math.round(DATA.mps49.credits).toLocaleString()} credits (~$${Math.round(DATA.mps49.credits / 100)})`;
+$("#co3").innerHTML = `<b>Measured:</b> the magnetization climbs from −1 and then <b>locks at −⅓</b> for Δ ≈ ${D3.plateau[0]}–${D3.plateau[1]} rad/µs. There, up to <b>${fmt(D3.best_crystal * 100, 0)}%</b> of shots are a perfect ⅓ crystal. The plateau ends as Δ approaches the nearest-neighbour interaction U(5 µm) ≈ ${fmt(D3.u5, 0)} rad/µs: two neighbours being excited then starts to pay, and the crystal melts (P = ${fmt(D3.emu[D3.emu.length - 1].crystal)} at Δ = ${D3.delta_end[D3.delta_end.length - 1]}). TmMgGaO₄ shows the mirror-image plateau at m = +⅓ in a magnetic field: same model, opposite field.`;
+
+/* ---------------- chapter 4 */
+const misSet = new Set(D4.mis_sets[0]);
+const st4 = new Stage($("#st4"), D4.traps, { edges: D4.edges, tilt: .35, traps: false });
+let m4 = "mis", shotT4 = 0, shotK4 = 0;
+function upd4() { if (m4 === "mis") { st4.set(D4.traps.map((_, i) => misSet.has(i) ? 1 : 0), D4.traps.map((_, i) => misSet.has(i))); $("#st4b").textContent = `size ${D4.mis}  ·  brute force ${fmt(D4.classical_ms, 1)} ms`; $("#st4l").textContent = "the unique maximum independent set"; } }
+$$("#m4 button").forEach(b => b.onclick = () => { m4 = b.dataset.m; $$("#m4 button").forEach(x => x.classList.toggle("on", x === b)); shotT4 = 0; upd4(); });
+function shots4(dt) { if (m4 !== "shots") return; shotT4 -= dt; if (shotT4 > 0) return; shotT4 = 1.6; const [b, v] = D4.top_slowest[shotK4++ % D4.top_slowest.length]; const isM = [...b].every((c, i) => (c === "1") === misSet.has(i)); st4.set([...b].map(Number), [...b].map(c => isM && c === "1")); $("#st4b").textContent = `${b}  ·  ${(v / D4.shots * 100).toFixed(1)}%`; $("#st4l").textContent = isM ? "outcome: the exact MIS" : `outcome: independent set of size ${[...b].filter(c => c === "1").length}`; }
+$("#c4ctrl").innerHTML = `<span>Exact MIS size <b>${D4.mis}</b> (unique) · ${D4.traps.length} vertices · ${D4.edges.length} edges</span>`;
+upd4();
+function draw4() {
+  chart($("#c4a"), { x: [500, 5300], y: [0, Math.max(.7, ...D4.exact.map(e => e.p_mis)) + .05], yt: [0, .2, .4, .6], xt: D4.durations, xu: "ns", xl: "sweep duration (ns)", yl: "P(exact MIS)", series: [
+    { name: "exact", c: "--ref", line: 1, pts: D4.durations.map((t, i) => [t, D4.exact[i].p_mis]) }, { name: "emulator", c: "--s3", dots: 1, pts: D4.durations.map((t, i) => [t, D4.emu[i].p_mis]) }],
+    extra: x => { const i = D4.durations.indexOf(x); return `<div class="r"><span>P(valid independent set)</span><b>${fmt(D4.emu[i].p_independent, 3)}</b></div>`; } });
+  bars($("#c4b"), D4.top_slowest.map(([b, v]) => { const isM = [...b].every((c, i) => (c === "1") === misSet.has(i)); const sz = [...b].filter(c => c === "1").length; return { label: b, v: v / D4.shots, size: sz, c: isM ? "--s3" : "--ref", note: isM ? "the exact MIS" : (D4.indep[b] ? `a valid independent set, ${D4.mis - sz} short of the MIS` : "violates an edge") }; }));
+}
+$("#co4").innerHTML = `<b>Measured:</b> a fast 0.8 µs sweep finds the exact MIS in <b>${fmt(D4.emu[0].p_mis * 100, 0)}%</b> of shots. A slow 5 µs sweep finds it in <b>${fmt(D4.emu[D4.emu.length - 1].p_mis * 100, 0)}%</b>, and ${fmt(D4.emu[D4.emu.length - 1].p_independent * 100, 1)}% of shots are valid independent sets. <b>Honest comparison:</b> brute force on this machine solved the same graph exactly in ${fmt(D4.classical_ms, 1)} ms, and a greedy heuristic also finds it. At 12 vertices the atoms are a demonstration. What scales to 100 atoms is the encoding, and whether it beats classical heuristics there is an open research question.`;
+
+/* ---------------- code blocks */
+const CODE = DATA.code;
+function hl(src) {
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  return src.split("\n").map(line => {
+    const ci = line.search(/#(?=(?:[^"]*"[^"]*")*[^"]*$)/); let code = ci >= 0 ? line.slice(0, ci) : line, com = ci >= 0 ? line.slice(ci) : "";
+    code = esc(code).replace(/("[^"]*"|'[^']*')/g, '<span class="tok-s">$1</span>').replace(/\b(from|import|for|in|if|else|def|return|True|False|None|and|not|lambda)\b(?![^<]*<\/span>)/g, '<span class="tok-k">$1</span>').replace(/(?<![\w.#])(\d+(?:\.\d+)?)(?![\w<])/g, '<span class="tok-n">$1</span>');
+    return code + (com ? `<span class="tok-c">${esc(com)}</span>` : "");
+  }).join("\n");
+}
+$$(".code").forEach(box => {
+  const tabs = CODE[box.dataset.code]; const names = Object.keys(tabs);
+  box.innerHTML = `<div class="tabs">${names.map((n, i) => `<button class="${i ? "" : "on"}" data-i="${i}">${n}</button>`).join("")}<span class="sp"></span><button class="copy">Copy</button></div>` + names.map((n, i) => `<pre${i ? " hidden" : ""}><code>${tabs[n].sh ? tabs[n].src.replace(/&/g, "&amp;").replace(/</g, "&lt;") : hl(tabs[n].src)}</code></pre>`).join("");
+  const pres = box.querySelectorAll("pre"); let cur = 0;
+  box.querySelectorAll(".tabs button[data-i]").forEach(b => b.onclick = () => { cur = +b.dataset.i; box.querySelectorAll(".tabs button[data-i]").forEach(x => x.classList.toggle("on", x === b)); pres.forEach((p, i) => p.hidden = i !== cur); });
+  box.querySelector(".copy").onclick = e => { const txt = tabs[names[cur]].src; const done = () => { e.target.textContent = "Copied"; setTimeout(() => e.target.textContent = "Copy", 1400); }; try { navigator.clipboard.writeText(txt).then(done, () => { fallbackCopy(txt); done(); }); } catch (err) { fallbackCopy(txt); done(); } };
+});
+function fallbackCopy(t) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); } catch (e) {} a.remove(); }
+
+/* ---------------- misc */
+$("#fJobs").textContent = DATA.n_jobs;
+$("#sU5").textContent = Math.round(DATA.u5);
+$("#built").textContent = DATA.built;
+$("#perMin").textContent = DATA.per_min.toLocaleString();
+$("#costTbl").innerHTML = `<tr><th>Notebook cell</th><th>Jobs × shots</th><th>Est. QPU time</th><th>Est. credits</th><th>≈ USD</th></tr>` + DATA.costs.map(c => `<tr><td>${c.name}</td><td class="num">${c.jobs} × ${c.shots}</td><td class="num">${Math.round(c.seconds)} s</td><td class="num">${Math.round(c.credits).toLocaleString()}</td><td class="num">$${(c.credits / 100).toFixed(0)}</td></tr>`).join("");
+(function primer() { const g = $("#primerTraps"); const on = new Set([3, 7, 11]); let k = 0; for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) { const x = 30 + i * 32 + (j % 2) * 16, y = 18 + j * 22; el("circle", { cx: x, cy: y, r: 6.5, fill: on.has(k) ? "#7fb8ff" : (k % 5 === 2 ? "none" : "#3a4252"), stroke: "#4a5466", "stroke-width": 1.2 }, g); k++; } })();
+const navLinks = $$(".nav a"); const secs = navLinks.map(a => $(a.getAttribute("href")));
+new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) navLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); }), { rootMargin: "-45% 0px -50% 0px" }).observe && secs.forEach(s => s && new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) navLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); }), { rootMargin: "-45% 0px -50% 0px" }).observe(s));
+function redrawCharts() { try { draw1(); draw2(); draw3(); draw4(); } catch (e) { console.error(e); } }
+const tick = { t: performance.now() };
+(function shotsLoop(now) { const dt = Math.min(.1, (now - tick.t) / 1000); tick.t = now; shots2(dt); shots3(dt); shots4(dt); requestAnimationFrame(shotsLoop); })(performance.now());
+applyTheme();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
